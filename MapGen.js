@@ -1,0 +1,148 @@
+/** -------------  CONFIG  ------------- **/
+const DEFAULT_WIDTH  = 80;   // columns
+const DEFAULT_HEIGHT = 50;   // rows
+const SCALE          = 0.08; // how zoomed‑in the noise feels
+const OCTAVES        = 4;    // layers of noise
+const PERSISTENCE    = 0.5;  // amplitude fall‑off per octave
+
+// Biome thresholds (ascending) and colours
+const BIOMES = [
+  { max: 0.35, colour: '#1565c0' }, // deep ocean (35%)
+  { max: 0.40, colour: '#42a5f5' }, // coast      (5%)
+  { max: 0.55, colour: '#81c784' }, // grassland  (15%)
+  { max: 0.75, colour: '#388e3c' }, // forest     (20%)
+  { max: 1.00, colour: '#795548' }  // mountain   (25%)
+];
+
+
+/** -------------  MENU  ------------- **/
+function onOpen() {
+  SpreadsheetApp.getUi()
+    .createMenu('Map')
+    .addItem('Generate Map', 'showPrompt')
+    .addToUi();
+}
+
+
+function showPrompt() {
+  const ui   = SpreadsheetApp.getUi();
+  const seed = parseInt(ui.prompt('Seed number (any integer)', 'ex. 12345', ui.ButtonSet.OK).getResponseText(), 10);
+  const size = ui.prompt('Map size (cols x rows)', `ex. ${DEFAULT_WIDTH}x${DEFAULT_HEIGHT}`, ui.ButtonSet.OK).getResponseText();
+
+  const [w, h] = size.toLowerCase().split(/x|×/).map(n => parseInt(n, 10));
+  generateMap(seed || 1, w || DEFAULT_WIDTH, h || DEFAULT_HEIGHT);
+}
+
+
+/** -------------  CORE  ------------- **/
+function generateMap(seed, width, height) {
+  const sheet = SpreadsheetApp.getActiveSheet();
+  
+  // 1. Resize columns to exactly width
+  const currentCols = sheet.getMaxColumns();
+  if (currentCols < width) {
+    sheet.insertColumnsAfter(currentCols, width - currentCols);
+  } else if (currentCols > width) {
+    sheet.deleteColumns(width + 1, currentCols - width);
+  }
+  
+  // 2. Resize rows to exactly height
+  const currentRows = sheet.getMaxRows();
+  if (currentRows < height) {
+    sheet.insertRowsAfter(currentRows, height - currentRows);
+  } else if (currentRows > height) {
+    sheet.deleteRows(height + 1, currentRows - height);
+  }
+  
+  // 3. Clear and set cell dimensions
+  sheet.clear();
+  sheet.setColumnWidths(1, width, 15);
+  sheet.setRowHeights(1, height, 15);
+
+  // 4. Generate elevation grid with fractal noise
+  const prng = mulberry32(seed);
+  const grid = Array.from({ length: height }, () => new Array(width));
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      // --- compute raw noise value across OCTAVES ---
+      let amp = 1, freq = 1, value = 0, norm = 0;
+      for (let o = 0; o < OCTAVES; o++) {
+        value += amp * valueNoise((x * SCALE) * freq,
+                                  (y * SCALE) * freq,
+                                  prng);
+        norm  += amp;
+        amp   *= PERSISTENCE;
+        freq  *= 2;
+      }
+      let e = value / norm;            // normalised elevation in [0,1]
+
+      //  BIAS YOUR ELEVATION CURVE
+      //  Drop this in to boost mid-high values and shrink oceans:
+      e = Math.pow(e, 0.7);            // exponent < 1 biases upward
+      //  range between 0.6 (stronger) and 0.95 (subtler)
+
+      // clamp just in case
+      e = Math.max(0, Math.min(1, e));
+      grid[y][x] = e;
+    }
+  }
+  
+  // 5. Map elevations into colours and paint the sheet
+  const colours = grid.map(row => row.map(e => pickColour(e)));
+  sheet.getRange(1, 1, height, width).setBackgrounds(colours);
+
+  // 6. Optional: hide gridlines for a cleaner “map” look
+  sheet.setHiddenGridlines(true);
+  
+  Logger.log(`Generated ${width}×${height} map with seed ${seed}`);
+}
+
+
+/** -------------  HELPERS  ------------- **/
+function pickColour(val) {
+  for (let i = 0; i < BIOMES.length; i++) {
+    if (val <= BIOMES[i].max) return BIOMES[i].colour;
+  }
+  return '#000000';
+}
+
+
+// Deterministic value noise based on integer lattice hashing
+function valueNoise(x, y, prng) {
+  const xi = Math.floor(x), yi = Math.floor(y);
+  const xf = x - xi,       yf = y - yi;
+
+  // Corner values
+  const v00 = hash2D(xi,   yi,   prng);
+  const v10 = hash2D(xi+1, yi,   prng);
+  const v01 = hash2D(xi,   yi+1, prng);
+  const v11 = hash2D(xi+1, yi+1, prng);
+
+  // Bilinear interpolation
+  const i1 = lerp(v00, v10, fade(xf));
+  const i2 = lerp(v01, v11, fade(xf));
+  return lerp(i1, i2, fade(yf));
+}
+
+
+function fade(t){ return t*t*t*(t*(t*6-15)+10); }
+function lerp(a,b,t){ return a + (b - a)*t; }
+
+
+// Fast integer hash → [0,1)
+function hash2D(x, y, prng) {
+  let n = x * 374761393 + y * 668265263; // big primes
+  n = (n ^ (n >> 13)) * 1274126177;
+  return ((n ^ (n >> 16)) >>> 0) / 4294967296;
+}
+
+
+// Tiny, seedable PRNG (32‑bit)
+function mulberry32(a){
+  return function() {
+    let t = a += 0x6D2B79F5;
+    t = Math.imul(t ^ t >>> 15, t | 1);
+    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
