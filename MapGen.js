@@ -1,16 +1,16 @@
-const DEFAULT_WIDTH  = 200;   // x (columns)
+const DEFAULT_WIDTH  = 100;   // x (columns)
 const DEFAULT_HEIGHT = 120;   // y (rows)
-const SCALE          = 0.06;  // how zoomed‑in the noise feels (reduced to create larger features)
+const SCALE          = 0.08;  // how zoomed‑in the noise feels (reduced to create larger features)
 const OCTAVES        = 4;     // layers of noise
 const PERSISTENCE    = 0.5;   // increased amplitude fall-off for more variation
 
-// Biome thresholds (ascending) and colours
+// Biome thresholds (ascending) and colors
 const BIOMES = [
-  { max: 0.30, colour: '#1565c0' }, // deep ocean (30%)
-  { max: 0.35, colour: '#42a5f5' }, // coast      (5%)
-  { max: 0.50, colour: '#81c784' }, // grassland  (15%)
-  { max: 0.70, colour: '#388e3c' }, // forest     (20%)
-  { max: 1.00, colour: '#795548' }  // mountain   (30%)
+  { max: 0.35, color: '#1565c0' }, // deep ocean (35%)
+  { max: 0.42, color: '#42a5f5' }, // coast      (7%)
+  { max: 0.51, color: '#81c784' }, // grassland  (9%)
+  { max: 0.60, color: '#388e3c' }, // forest     (9%)
+  { max: 1.00, color: '#795548' }  // mountain   (40%)
 ];
 
 
@@ -25,11 +25,12 @@ function onOpen() {
 
 function showPrompt() {
   const ui   = SpreadsheetApp.getUi();
-  const seed = parseInt(ui.prompt('Seed number (any integer)', 'ex. 12345', ui.ButtonSet.OK).getResponseText(), 10);
+  const seed = parseInt(ui.prompt('Seed (any integer)', 'ex. 12345', ui.ButtonSet.OK).getResponseText());
+    
   const size = ui.prompt('Map size (cols x rows)', `ex. ${DEFAULT_WIDTH}x${DEFAULT_HEIGHT}`, ui.ButtonSet.OK).getResponseText();
 
-  const [w, h] = size.toLowerCase().split(/x|×/).map(n => parseInt(n, 10));
-  generateMap(seed || 1, w || DEFAULT_WIDTH, h || DEFAULT_HEIGHT);
+  const [w, h] = size.toLowerCase().split(/x|×/).map(n => parseInt(n));
+  generateMap(seed, w || DEFAULT_WIDTH, h || DEFAULT_HEIGHT);
 }
 
 
@@ -68,16 +69,16 @@ function generateMap(seed, width, height) {
     }
   }
   
-  // 2. Map elevations into colours and paint the sheet
-  const colours = grid.map(row => row.map(e => pickColour(e)));
-  sheet.getRange(1, 1, height, width).setBackgrounds(colours);
+  // 2. Map elevations into colors and paint the sheet
+  const colors = grid.map(row => row.map(e => pickColor(e)));
+  sheet.getRange(1, 1, height, width).setBackgrounds(colors);
 }
 
 
 // HELPERS --------------------------------------------------
-function pickColour(val) {
+function pickColor(val) {
   for (let i = 0; i < BIOMES.length; i++) {
-    if (val <= BIOMES[i].max) return BIOMES[i].colour;
+    if (val <= BIOMES[i].max) return BIOMES[i].color;
   }
   return '#000000';
 }
