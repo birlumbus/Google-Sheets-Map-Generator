@@ -1,17 +1,17 @@
 /** -------------  CONFIG  ------------- **/
 const DEFAULT_WIDTH  = 80;   // columns
 const DEFAULT_HEIGHT = 50;   // rows
-const SCALE          = 0.08; // how zoomed‑in the noise feels
+const SCALE          = 0.06; // how zoomed‑in the noise feels (reduced to create larger features)
 const OCTAVES        = 4;    // layers of noise
-const PERSISTENCE    = 0.5;  // amplitude fall‑off per octave
+const PERSISTENCE    = 0.6;  // increased amplitude fall-off for more variation
 
 // Biome thresholds (ascending) and colours
 const BIOMES = [
-  { max: 0.35, colour: '#1565c0' }, // deep ocean (35%)
-  { max: 0.40, colour: '#42a5f5' }, // coast      (5%)
-  { max: 0.55, colour: '#81c784' }, // grassland  (15%)
-  { max: 0.75, colour: '#388e3c' }, // forest     (20%)
-  { max: 1.00, colour: '#795548' }  // mountain   (25%)
+  { max: 0.30, colour: '#1565c0' }, // deep ocean (30%)
+  { max: 0.35, colour: '#42a5f5' }, // coast      (5%)
+  { max: 0.50, colour: '#81c784' }, // grassland  (15%)
+  { max: 0.70, colour: '#388e3c' }, // forest     (20%)
+  { max: 1.00, colour: '#795548' }  // mountain   (30%)
 ];
 
 
@@ -37,29 +37,12 @@ function showPrompt() {
 /** -------------  CORE  ------------- **/
 function generateMap(seed, width, height) {
   const sheet = SpreadsheetApp.getActiveSheet();
-  
-  // 1. Resize columns to exactly width
-  const currentCols = sheet.getMaxColumns();
-  if (currentCols < width) {
-    sheet.insertColumnsAfter(currentCols, width - currentCols);
-  } else if (currentCols > width) {
-    sheet.deleteColumns(width + 1, currentCols - width);
-  }
-  
-  // 2. Resize rows to exactly height
-  const currentRows = sheet.getMaxRows();
-  if (currentRows < height) {
-    sheet.insertRowsAfter(currentRows, height - currentRows);
-  } else if (currentRows > height) {
-    sheet.deleteRows(height + 1, currentRows - height);
-  }
-  
-  // 3. Clear and set cell dimensions
+  resizeSheet(sheet, width, height);
   sheet.clear();
   sheet.setColumnWidths(1, width, 15);
   sheet.setRowHeights(1, height, 15);
 
-  // 4. Generate elevation grid with fractal noise
+  // 1. Generate elevation grid with fractal noise
   const prng = mulberry32(seed);
   const grid = Array.from({ length: height }, () => new Array(width));
   for (let y = 0; y < height; y++) {
@@ -76,10 +59,9 @@ function generateMap(seed, width, height) {
       }
       let e = value / norm;            // normalised elevation in [0,1]
 
-      //  BIAS YOUR ELEVATION CURVE
-      //  Drop this in to boost mid-high values and shrink oceans:
-      e = Math.pow(e, 0.7);            // exponent < 1 biases upward
-      //  range between 0.6 (stronger) and 0.95 (subtler)
+      // Apply elevation curve biasing
+      e = Math.pow(e, 0.65);          // boost mid-high values
+      e = e * (1 + (valueNoise(x * 0.02, y * 0.02, prng) * 0.3)); // add large-scale variation
 
       // clamp just in case
       e = Math.max(0, Math.min(1, e));
@@ -87,11 +69,11 @@ function generateMap(seed, width, height) {
     }
   }
   
-  // 5. Map elevations into colours and paint the sheet
+  // 2. Map elevations into colours and paint the sheet
   const colours = grid.map(row => row.map(e => pickColour(e)));
   sheet.getRange(1, 1, height, width).setBackgrounds(colours);
 
-  // 6. Optional: hide gridlines for a cleaner “map” look
+  // 3. Optional: hide gridlines for a cleaner "map" look
   sheet.setHiddenGridlines(true);
   
   Logger.log(`Generated ${width}×${height} map with seed ${seed}`);
@@ -145,4 +127,23 @@ function mulberry32(a){
     t ^= t + Math.imul(t ^ t >>> 7, t | 61);
     return ((t ^ t >>> 14) >>> 0) / 4294967296;
   };
+}
+
+
+function resizeSheet(sheet, width, height) {
+  // 1. Resize columns to exactly width
+  const currentCols = sheet.getMaxColumns();
+  if (currentCols < width) {
+    sheet.insertColumnsAfter(currentCols, width - currentCols);
+  } else if (currentCols > width) {
+    sheet.deleteColumns(width + 1, currentCols - width);
+  }
+  
+  // 2. Resize rows to exactly height
+  const currentRows = sheet.getMaxRows();
+  if (currentRows < height) {
+    sheet.insertRowsAfter(currentRows, height - currentRows);
+  } else if (currentRows > height) {
+    sheet.deleteRows(height + 1, currentRows - height);
+  }
 }
