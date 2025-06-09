@@ -6,9 +6,9 @@ const PERSISTENCE    = 0.5;   // increased amplitude fall-off for more variation
 
 // Biome thresholds (ascending) and colors
 const BIOMES = [
-  { max: 0.35, color: '#1565c0' }, // deep ocean (35%)
-  { max: 0.42, color: '#42a5f5' }, // coast      (7%)
-  { max: 0.51, color: '#81c784' }, // grassland  (9%)
+  { max: 0.38, color: '#1565c0' }, // deep ocean (38%)
+  { max: 0.43, color: '#42a5f5' }, // coast      (5%)
+  { max: 0.51, color: '#81c784' }, // grassland  (8%)
   { max: 0.59, color: '#388e3c' }, // forest     (9%)
   { max: 1.00, color: '#795548' }  // mountain   (40%)
 ];
