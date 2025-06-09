@@ -25,12 +25,12 @@ function onOpen() {
 
 function showPrompt() {
   const ui   = SpreadsheetApp.getUi();
-  const seed = parseInt(ui.prompt('Seed (any integer)', 'ex. 12345', ui.ButtonSet.OK).getResponseText());
+  const seed = parseInt(ui.prompt('Seed (any integer)', 'ex. 12345', ui.ButtonSet.OK).getResponseText(), 10);
     
   const size = ui.prompt('Map size (cols x rows)', `ex. ${DEFAULT_WIDTH}x${DEFAULT_HEIGHT}`, ui.ButtonSet.OK).getResponseText();
 
-  const [w, h] = size.toLowerCase().split(/x|×/).map(n => parseInt(n));
-  generateMap(seed, w || DEFAULT_WIDTH, h || DEFAULT_HEIGHT);
+  const [w, h] = size.toLowerCase().split(/x|×/).map(n => parseInt(n, 10));
+  generateMap(seed || 1, w || DEFAULT_WIDTH, h || DEFAULT_HEIGHT);
 }
 
 
@@ -70,7 +70,7 @@ function generateMap(seed, width, height) {
   }
   
   // 2. Map elevations into colors and paint the sheet
-  const colors = grid.map(row => row.map(e => pickColor(e)));
+  const colors = grid.map(row => row.map(elev => pickColor(elev)));
   sheet.getRange(1, 1, height, width).setBackgrounds(colors);
 }
 
@@ -108,20 +108,20 @@ function lerp(a,b,t){ return a + (b - a)*t; }
 
 // Fast integer hash → [0,1)
 function hash2D(x, y, prng) {
-  let n = x * 374761393 + y * 668265263; // big primes
+  let n = x * 374761393 + y * 668265263 + prng;
   n = (n ^ (n >> 13)) * 1274126177;
   return ((n ^ (n >> 16)) >>> 0) / 4294967296;
 }
 
 
 // Tiny, seedable PRNG (32‑bit)
-function mulberry32(a){
+function mulberry32(a) {
   return function() {
-    let t = a += 0x6D2B79F5;
+    var t = a += 0x6D2B79F5;
     t = Math.imul(t ^ t >>> 15, t | 1);
     t ^= t + Math.imul(t ^ t >>> 7, t | 61);
     return ((t ^ t >>> 14) >>> 0) / 4294967296;
-  };
+  }
 }
 
 
