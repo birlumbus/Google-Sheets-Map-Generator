@@ -71,11 +71,6 @@ function generateMap(seed, width, height) {
   // 2. Map elevations into colours and paint the sheet
   const colours = grid.map(row => row.map(e => pickColour(e)));
   sheet.getRange(1, 1, height, width).setBackgrounds(colours);
-
-  // 3. Optional: hide gridlines for a cleaner "map" look
-  sheet.setHiddenGridlines(true);
-  
-  Logger.log(`Generated ${width}×${height} map with seed ${seed}`);
 }
 
 
