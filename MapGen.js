@@ -1,9 +1,8 @@
-/** -------------  CONFIG  ------------- **/
-const DEFAULT_WIDTH  = 80;   // columns
-const DEFAULT_HEIGHT = 50;   // rows
-const SCALE          = 0.06; // how zoomed‑in the noise feels (reduced to create larger features)
-const OCTAVES        = 4;    // layers of noise
-const PERSISTENCE    = 0.6;  // increased amplitude fall-off for more variation
+const DEFAULT_WIDTH  = 200;   // x (columns)
+const DEFAULT_HEIGHT = 120;   // y (rows)
+const SCALE          = 0.06;  // how zoomed‑in the noise feels (reduced to create larger features)
+const OCTAVES        = 4;     // layers of noise
+const PERSISTENCE    = 0.5;   // increased amplitude fall-off for more variation
 
 // Biome thresholds (ascending) and colours
 const BIOMES = [
@@ -15,7 +14,7 @@ const BIOMES = [
 ];
 
 
-/** -------------  MENU  ------------- **/
+// MENU --------------------------------------------------
 function onOpen() {
   SpreadsheetApp.getUi()
     .createMenu('Map')
@@ -34,7 +33,7 @@ function showPrompt() {
 }
 
 
-/** -------------  CORE  ------------- **/
+// CORE --------------------------------------------------
 function generateMap(seed, width, height) {
   const sheet = SpreadsheetApp.getActiveSheet();
   resizeSheet(sheet, width, height);
@@ -80,7 +79,7 @@ function generateMap(seed, width, height) {
 }
 
 
-/** -------------  HELPERS  ------------- **/
+// HELPERS --------------------------------------------------
 function pickColour(val) {
   for (let i = 0; i < BIOMES.length; i++) {
     if (val <= BIOMES[i].max) return BIOMES[i].colour;
@@ -131,7 +130,7 @@ function mulberry32(a){
 
 
 function resizeSheet(sheet, width, height) {
-  // 1. Resize columns to exactly width
+  // resize columns exactly to width
   const currentCols = sheet.getMaxColumns();
   if (currentCols < width) {
     sheet.insertColumnsAfter(currentCols, width - currentCols);
@@ -139,7 +138,7 @@ function resizeSheet(sheet, width, height) {
     sheet.deleteColumns(width + 1, currentCols - width);
   }
   
-  // 2. Resize rows to exactly height
+  // resize rows exactly to height
   const currentRows = sheet.getMaxRows();
   if (currentRows < height) {
     sheet.insertRowsAfter(currentRows, height - currentRows);
