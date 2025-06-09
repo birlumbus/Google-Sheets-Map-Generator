@@ -43,7 +43,6 @@ function generateMap(seed, width, height) {
   sheet.setRowHeights(1, height, 15);
 
   // 1. Generate elevation grid with fractal noise
-  const prng = mulberry32(seed);
   const grid = Array.from({ length: height }, () => new Array(width));
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
@@ -52,7 +51,7 @@ function generateMap(seed, width, height) {
       for (let o = 0; o < OCTAVES; o++) {
         value += amp * valueNoise((x * SCALE) * freq,
                                   (y * SCALE) * freq,
-                                  prng);
+                                  seed);
         norm  += amp;
         amp   *= PERSISTENCE;
         freq  *= 2;
@@ -61,7 +60,7 @@ function generateMap(seed, width, height) {
 
       // Apply elevation curve biasing
       e = Math.pow(e, 0.65);          // boost mid-high values
-      e = e * (1 + (valueNoise(x * 0.02, y * 0.02, prng) * 0.3)); // add large-scale variation
+      e = e * (1 + (valueNoise(x * 0.02, y * 0.02, seed) * 0.3)); // add large-scale variation
 
       // clamp just in case
       e = Math.max(0, Math.min(1, e));
@@ -85,15 +84,15 @@ function pickColor(val) {
 
 
 // Deterministic value noise based on integer lattice hashing
-function valueNoise(x, y, prng) {
+function valueNoise(x, y, seed) {
   const xi = Math.floor(x), yi = Math.floor(y);
   const xf = x - xi,       yf = y - yi;
 
   // Corner values
-  const v00 = hash2D(xi,   yi,   prng);
-  const v10 = hash2D(xi+1, yi,   prng);
-  const v01 = hash2D(xi,   yi+1, prng);
-  const v11 = hash2D(xi+1, yi+1, prng);
+  const v00 = hash2D(xi,   yi,   seed);
+  const v10 = hash2D(xi+1, yi,   seed);
+  const v01 = hash2D(xi,   yi+1, seed);
+  const v11 = hash2D(xi+1, yi+1, seed);
 
   // Bilinear interpolation
   const i1 = lerp(v00, v10, fade(xf));
@@ -107,21 +106,10 @@ function lerp(a,b,t){ return a + (b - a)*t; }
 
 
 // Fast integer hash → [0,1)
-function hash2D(x, y, prng) {
-  let n = x * 374761393 + y * 668265263 + prng;
+function hash2D(x, y, seed) {
+  let n = x * 374761393 + y * 668265263 + seed * 2246822519;
   n = (n ^ (n >> 13)) * 1274126177;
   return ((n ^ (n >> 16)) >>> 0) / 4294967296;
-}
-
-
-// Tiny, seedable PRNG (32‑bit)
-function mulberry32(a) {
-  return function() {
-    var t = a += 0x6D2B79F5;
-    t = Math.imul(t ^ t >>> 15, t | 1);
-    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
-    return ((t ^ t >>> 14) >>> 0) / 4294967296;
-  }
 }
 
 
