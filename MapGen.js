@@ -1,6 +1,6 @@
-const DEFAULT_WIDTH  = 100;   // x (columns)
-const DEFAULT_HEIGHT = 120;   // y (rows)
-const SCALE          = 0.08;  // how zoomed‑in the noise feels (reduced to create larger features)
+const DEFAULT_WIDTH  = 160;   // x (columns)
+const DEFAULT_HEIGHT = 100;   // y (rows)
+const SCALE          = 0.08;  // zoomed level (reduced to create larger features)
 const OCTAVES        = 4;     // layers of noise
 const PERSISTENCE    = 0.5;   // increased amplitude fall-off for more variation
 
@@ -9,7 +9,7 @@ const BIOMES = [
   { max: 0.35, color: '#1565c0' }, // deep ocean (35%)
   { max: 0.42, color: '#42a5f5' }, // coast      (7%)
   { max: 0.51, color: '#81c784' }, // grassland  (9%)
-  { max: 0.60, color: '#388e3c' }, // forest     (9%)
+  { max: 0.59, color: '#388e3c' }, // forest     (9%)
   { max: 1.00, color: '#795548' }  // mountain   (40%)
 ];
 
@@ -39,8 +39,8 @@ function generateMap(seed, width, height) {
   const sheet = SpreadsheetApp.getActiveSheet();
   resizeSheet(sheet, width, height);
   sheet.clear();
-  sheet.setColumnWidths(1, width, 15);
-  sheet.setRowHeights(1, height, 15);
+  sheet.setColumnWidths(1, width, 8);
+  sheet.setRowHeights(1, height, 8);
 
   // 1. Generate elevation grid with fractal noise
   const grid = Array.from({ length: height }, () => new Array(width));
