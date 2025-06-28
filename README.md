@@ -28,7 +28,7 @@ A Google Apps Script that generates a procedural map directly inside a Google Sh
 
 1. Open your Google Sheets document.
 2. Navigate to **Extensions → Apps Script**.
-3. In the Apps Script editor, delete any default code in `Code.gs` and paste the contents of the provided script.
+3. In the Apps Script editor, delete any default code in `Code.gs` and paste the contents of [this script](https://github.com/birlumbus/Google-Sheets-Map-Generator/blob/main/MapGen.js).
 4. Adjust any constants if desired (see [Configuration](#configuration)).
 5. Save the project (e.g. name it `MapGenerator`).
 6. Return to the spreadsheet and reload the page.
